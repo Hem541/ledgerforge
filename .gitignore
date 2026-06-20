@@ -1,0 +1,42 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# builds / artifacts
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# env / secrets
+.env
+.env.local
+.env.*.local
+
+# logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# os / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# test / coverage
+coverage/
+*.lcov
+
+# load test output
+load-tests/**/results/
+
+# demo media (committed separately / kept out of git)
+demos/*.mp4
+demos/*.mov
+demos/*.csv
+demos/*.png
+demos/*.jpg

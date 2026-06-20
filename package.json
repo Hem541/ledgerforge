@@ -1,0 +1,20 @@
+{
+  "name": "ledgerforge",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cloud payment ledger and reconciliation platform",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "infra:up": "docker compose up -d",
+    "infra:down": "docker compose down",
+    "infra:reset": "docker compose down -v && docker compose up -d",
+    "infra:logs": "docker compose logs -f",
+    "db:psql": "docker exec -it ledgerforge-db psql -U ledger -d ledgerforge"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

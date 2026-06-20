@@ -1,0 +1,72 @@
+# ============================================================================
+# Production compose — the FULL stack in one command.
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Runs Postgres, Redis, the API, and the web dashboard together. Used for the
+# EC2 deployment. Unlike the dev compose (db + redis only, apps run via npm),
+# this containerizes everything so the whole system comes up with one command.
+# ============================================================================
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ledger
+      POSTGRES_PASSWORD: ledger_dev_pw
+      POSTGRES_DB: ledgerforge
+    volumes:
+      - ledger_pgdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ledger -d ledgerforge"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - ledger_redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  api:
+    build:
+      context: ./apps/api
+    environment:
+      DATABASE_URL: postgresql://ledger:ledger_dev_pw@db:5432/ledgerforge
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      API_PORT: 3001
+      IDEMPOTENCY_TTL_SECONDS: 86400
+      WEBHOOK_RETRY_BASE_MS: 1000
+      WEBHOOK_MAX_ATTEMPTS: 6
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    # Exposed for debugging; the web app talks to it over the internal network.
+    ports:
+      - "3001:3001"
+
+  web:
+    build:
+      context: ./apps/web
+      args:
+        # Baked into the Next.js build so rewrites() proxies to the API
+        # container (reachable as 'api' on the compose network), not localhost.
+        API_PROXY_TARGET: http://api:3001
+    depends_on:
+      - api
+    # The dashboard is the public entry point.
+    ports:
+      - "80:3000"
+
+volumes:
+  ledger_pgdata:
+  ledger_redisdata:

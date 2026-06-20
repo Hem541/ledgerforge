@@ -1,0 +1,63 @@
+# ============================================================================
+# LedgerForge local infrastructure
+# ============================================================================
+# Brings up the two stateful services LedgerForge depends on:
+#   - Postgres (the ledger, transactions, audit log)
+#   - Redis    (idempotency-key fast path + Bull job queue)
+#
+# Usage:
+#   docker compose up -d        # start in background
+#   docker compose ps           # see what's running
+#   docker compose logs -f db   # tail Postgres logs
+#   docker compose down         # stop (keeps data)
+#   docker compose down -v      # stop AND wipe data (fresh schema next time)
+#
+# The API and web apps run on your host (npm run dev) during development and
+# connect to these containers. In production they'd be containerized too;
+# that's what infra/docker-compose.prod.yml handles later.
+# ============================================================================
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: ledgerforge-db
+    environment:
+      POSTGRES_USER: ledger
+      POSTGRES_PASSWORD: ledger_dev_pw
+      POSTGRES_DB: ledgerforge
+    ports:
+      # host:container — connect from your Mac at localhost:5432
+      - "5432:5432"
+    volumes:
+      # Persist data between restarts in a named volume.
+      - ledger_pgdata:/var/lib/postgresql/data
+      # Everything in db/init runs ONCE on first startup, alphabetically.
+      # This is how the schema + seed get applied automatically.
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      # Lets other services (and you) know when Postgres is truly ready,
+      # not just when the container started.
+      test: ["CMD-SHELL", "pg_isready -U ledger -d ledgerforge"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: ledgerforge-redis
+    ports:
+      - "6379:6379"
+    # appendonly yes = Redis persists to disk so idempotency keys survive a
+    # restart during development. (In prod, idempotency keys also have a TTL.)
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - ledger_redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  ledger_pgdata:
+  ledger_redisdata:
