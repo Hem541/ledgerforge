@@ -13,7 +13,7 @@ LedgerForge records money movements using double-entry bookkeeping and guarantee
 ## Highlights
 
 - **Double-entry ledger** with a deferred Postgres constraint trigger enforcing that every transaction's entries sum to zero — at the database layer, so it can't be bypassed.
-- **Idempotent payments** — Redis `SET NX` fast path backed by a Postgres unique constraint. Load-tested at 700K+ colliding requests with zero duplicate charges.
+- **Idempotent payments** — Redis SET NX fast path backed by a Postgres unique constraint. Load-tested at 700K+ colliding requests with zero duplicate charges.
 - **Async webhook delivery** with exponential backoff and a dead-letter state.
 - **Independent reconciliation engine** that sweeps for imbalances and status mismatches; verified clean across 1M+ transactions.
 - **p95 ~9.6ms** write latency, ~2,300 payments/sec, 0% errors under load.
@@ -24,8 +24,6 @@ TypeScript · NestJS · PostgreSQL · Redis · Next.js · Docker · k6 · AWS EC
 
 ## Run it
 
-\`\`\`
-docker compose -f docker-compose.prod.yml up -d --build
-\`\`\`
+    docker compose -f docker-compose.prod.yml up -d --build
 
-Dashboard at \`http://localhost\`. See \`DEPLOY.md\` for the AWS walkthrough and \`BENCHMARKS.md\` for load-test details.
+Dashboard at http://localhost . See DEPLOY.md for the AWS walkthrough and BENCHMARKS.md for load-test details.
